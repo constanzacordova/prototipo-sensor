@@ -110,18 +110,24 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ====================== CONFIG ======================
-const SUPABASE_URL  = "https://yneigdknhcvwfyiwxiaa.supabase.co";
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InluZWlnZGtuaGN2d2Z5aXd4aWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTUzNDAsImV4cCI6MjA5NzkzMTM0MH0.1MRlQLEU01TL_ZksrXQc6x_DLPPqketmXhLH40Sr5yQ";
+const SUPABASE_URL  = "https://TUPROYECTO.supabase.co";
+const SUPABASE_ANON = "PEGA_AQUI_TU_ANON_KEY";
 // ====================================================
 
 const WINDOW_MS=6*60*60*1000, STALE_MS=3*60*1000;
-const sb=createClient(SUPABASE_URL,SUPABASE_ANON);
+// persistSession + autoRefreshToken hacen que la sesión sobreviva al cierre del navegador.
+const sb=createClient(SUPABASE_URL,SUPABASE_ANON,{
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+});
 const $=id=>document.getElementById(id);
 let device=null, points=[], channel=null, lastTs=null;
 
-// ---------- AUTH ----------
-sb.auth.onAuthStateChange((_e,session)=> session ? enterApp(session) : showAuth());
-(async()=>{ const {data:{session}}=await sb.auth.getSession(); session?enterApp(session):showAuth(); })();
+// ---------- AUTH: UN SOLO punto de entrada ----------
+// onAuthStateChange dispara INITIAL_SESSION al cargar (con el token ya refrescado),
+// SIGNED_IN al entrar y TOKEN_REFRESHED al renovar. Evita la carrera del arranque anterior.
+sb.auth.onAuthStateChange((event,session)=>{
+  if(session) enterApp(session); else showAuth();
+});
 
 function showAuth(){ $("auth").classList.remove("hidden"); $("app").classList.add("hidden"); }
 
@@ -136,13 +142,15 @@ $("sendlink").onclick=async()=>{
 async function enterApp(session){
   $("auth").classList.add("hidden"); $("app").classList.remove("hidden");
   $("who").textContent=session.user.email;
+  try{ sb.realtime.setAuth(session.access_token); }catch(e){}   // realtime con token fresco
   await loadDevices();
 }
 $("logout").onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
 
 // ---------- DEVICES ----------
 async function loadDevices(){
-  const {data:devs}=await sb.from("devices").select("*").order("name");
+  const {data:devs,error}=await sb.from("devices").select("*").order("name");
+  if(error){ console.error("loadDevices:",error.message); return; }
   const sel=$("dev");
   if(!devs||!devs.length){
     $("claim").classList.remove("hidden"); $("dash").classList.add("hidden");
