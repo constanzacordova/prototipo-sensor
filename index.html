@@ -5,247 +5,241 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Monitor de cámara de frío</title>
 <style>
-  :root{--bg:#0b1220;--panel:#121c2e;--panel-2:#0f1828;--line:#1f2d44;--ink:#e8eef7;
-    --muted:#8aa0bd;--cold:#38bdf8;--safe:#34d399;--safe-dim:#0e3a2e;--alert:#fb7185;
-    --alert-dim:#3a121f;--warn:#fbbf24;--warn-dim:#3a2e0e;}
-  *{box-sizing:border-box} html,body{margin:0}
-  body{background:radial-gradient(1200px 600px at 50% -10%,#15233b 0%,var(--bg) 60%);
-    color:var(--ink);min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-    -webkit-font-smoothing:antialiased;padding:18px;}
+  :root{
+    --bg:#0b1220; --panel:#121c2e; --panel-2:#0f1828;
+    --line:#1f2d44; --ink:#e8eef7; --muted:#8aa0bd;
+    --cold:#38bdf8;            /* acento frío / brand */
+    --safe:#34d399; --safe-dim:#0e3a2e;
+    --alert:#fb7185; --alert-dim:#3a121f;
+    --warn:#fbbf24; --warn-dim:#3a2e0e;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:radial-gradient(1200px 600px at 50% -10%, #15233b 0%, var(--bg) 60%);
+    color:var(--ink); min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; padding:18px;
+  }
   .wrap{max-width:560px;margin:0 auto}
-  .card{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);
-    border-radius:18px;padding:22px;margin-bottom:14px;transition:border-color .4s,box-shadow .4s;}
-  input{width:100%;background:#0e1726;color:var(--ink);border:1px solid var(--line);
-    border-radius:10px;padding:12px;font-size:15px;margin:8px 0}
-  button{background:var(--cold);color:#06283a;border:0;border-radius:10px;padding:12px 16px;
-    font-size:14px;font-weight:700;cursor:pointer;width:100%}
-  button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:600}
-  .hidden{display:none}
   header{display:flex;align-items:center;gap:10px;margin:6px 2px 18px}
-  header h1{font-size:15px;font-weight:600;margin:0}
+  header h1{font-size:15px;font-weight:600;letter-spacing:.2px;margin:0;color:var(--ink)}
   header .sub{font-size:12px;color:var(--muted);margin-top:1px}
   .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:0 0 auto}
-  .dot.live{background:var(--safe);animation:pulse 2s infinite}
+  .dot.live{background:var(--safe);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulse 2s infinite}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.5)}70%{box-shadow:0 0 0 7px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
-  select{margin-left:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);
-    border-radius:10px;padding:8px 10px;font-size:13px;max-width:46%}
-  .hero .pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;
-    padding:6px 11px;border-radius:999px;background:#16233a;color:var(--muted);border:1px solid var(--line)}
-  .pill .pdot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  select{
+    margin-left:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    border-radius:10px;padding:8px 10px;font-size:13px;max-width:46%;
+  }
+  .card{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:14px;
+    transition:border-color .4s, box-shadow .4s;
+  }
+  .hero{position:relative;overflow:hidden}
+  .hero .pill{
+    display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;
+    padding:6px 11px;border-radius:999px;background:#16233a;color:var(--muted);
+    border:1px solid var(--line);
+  }
+  .hero .pill .pdot{width:7px;height:7px;border-radius:50%;background:currentColor}
   .reading{display:flex;align-items:baseline;gap:6px;margin:14px 0 2px}
-  .temp{font-size:78px;line-height:.9;font-weight:680;letter-spacing:-2px;font-variant-numeric:tabular-nums;transition:color .4s}
+  .temp{
+    font-size:78px;line-height:.9;font-weight:680;letter-spacing:-2px;
+    font-variant-numeric:tabular-nums;transition:color .4s;
+  }
   .unit{font-size:26px;font-weight:600;color:var(--muted)}
   .meta{display:flex;gap:20px;margin-top:16px;flex-wrap:wrap}
-  .meta div{font-size:12px;color:var(--muted)} .meta b{display:block;font-size:18px;font-weight:600;color:var(--ink);margin-top:2px;font-variant-numeric:tabular-nums}
+  .meta div{font-size:12px;color:var(--muted)}
+  .meta b{display:block;font-size:18px;font-weight:600;color:var(--ink);margin-top:2px;font-variant-numeric:tabular-nums}
+  /* estados */
   .state-safe{border-color:#1c5e4a;box-shadow:0 0 36px -16px var(--safe)}
   .state-safe .temp{color:var(--safe)} .state-safe .pill{color:var(--safe);background:var(--safe-dim);border-color:#1c5e4a}
   .state-alert{border-color:#7a2740;box-shadow:0 0 40px -14px var(--alert)}
   .state-alert .temp{color:var(--alert)} .state-alert .pill{color:var(--alert);background:var(--alert-dim);border-color:#7a2740}
+  .state-stale{border-color:#5e4a18}
   .state-stale .temp{color:var(--warn)} .state-stale .pill{color:var(--warn);background:var(--warn-dim);border-color:#5e4a18}
   .chart-title{font-size:12px;color:var(--muted);margin:0 0 12px;display:flex;justify-content:space-between}
-  svg{width:100%;height:auto;display:block} .axis{fill:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
-  .empty{color:var(--muted);font-size:13px;text-align:center;padding:20px 8px;line-height:1.5}
-  .msg{font-size:13px;margin-top:8px;min-height:18px} .msg.err{color:var(--alert)} .msg.ok{color:var(--safe)}
-  .row{display:flex;gap:8px} .row button{width:auto}
+  svg{width:100%;height:auto;display:block}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:24px 8px;line-height:1.5}
+  .axis{fill:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
   footer{font-size:11px;color:var(--muted);text-align:center;margin-top:6px}
+  @media (prefers-reduced-motion:reduce){.dot.live{animation:none}*{transition:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <header>
+    <span class="dot" id="conn"></span>
+    <div>
+      <h1>Monitor de cámara de frío</h1>
+      <div class="sub" id="connlabel">Conectando…</div>
+    </div>
+    <select id="dev"></select>
+  </header>
 
-  <!-- LOGIN -->
-  <div id="auth" class="card hidden">
-    <h1 style="margin:0 0 4px">Monitor de cámara de frío</h1>
-    <p class="empty" style="text-align:left;padding:0;margin:6px 0 14px">
-      Ingresa tu email. Te enviaremos un enlace para entrar, sin contraseñas.</p>
-    <input id="email" type="email" placeholder="tu@email.com" autocomplete="email"/>
-    <button id="sendlink">Enviar enlace de acceso</button>
-    <div id="authmsg" class="msg"></div>
+  <div class="card hero" id="hero">
+    <span class="pill"><span class="pdot"></span><span id="status">Esperando datos</span></span>
+    <div class="reading"><span class="temp" id="temp">--</span><span class="unit">°C</span></div>
+    <div class="meta">
+      <div>Humedad<b id="hum">--</b></div>
+      <div>Zona segura<b id="zone">-- a -- °C</b></div>
+      <div>Última lectura<b id="ago">--</b></div>
+    </div>
   </div>
 
-  <!-- APP -->
-  <div id="app" class="hidden">
-    <header>
-      <span class="dot" id="conn"></span>
-      <div><h1>Monitor de cámara de frío</h1><div class="sub" id="who"></div></div>
-      <select id="dev"></select>
-    </header>
-
-    <!-- CLAIM (sin equipos) -->
-    <div id="claim" class="card hidden">
-      <h1 style="margin:0 0 4px">Vincula tu primer equipo</h1>
-      <p class="empty" style="text-align:left;padding:0;margin:6px 0 12px">
-        Escribe el código que viene en la etiqueta del sensor (QR).</p>
-      <input id="code" placeholder="Ej: FUENTE-7K2Q" autocapitalize="characters"/>
-      <button id="claimbtn">Vincular equipo</button>
-      <div id="claimmsg" class="msg"></div>
-    </div>
-
-    <!-- DASHBOARD -->
-    <div id="dash" class="hidden">
-      <div class="card hero" id="hero">
-        <span class="pill"><span class="pdot"></span><span id="status">Esperando datos</span></span>
-        <div class="reading"><span class="temp" id="temp">--</span><span class="unit">°C</span></div>
-        <div class="meta">
-          <div>Humedad<b id="hum">--</b></div>
-          <div>Zona segura<b id="zone">-- a -- °C</b></div>
-          <div>Última lectura<b id="ago">--</b></div>
-        </div>
-      </div>
-      <div class="card">
-        <p class="chart-title"><span>Últimas 6 horas</span><span id="range"></span></p>
-        <div id="chartbox"><div class="empty">Aún no llegan lecturas.</div></div>
-      </div>
-    </div>
-
-    <div class="row" style="margin-top:6px">
-      <button class="ghost" id="addbtn">+ Vincular otro equipo</button>
-      <button class="ghost" id="logout">Salir</button>
-    </div>
-    <footer id="foot"></footer>
+  <div class="card">
+    <p class="chart-title"><span>Últimas 6 horas</span><span id="range"></span></p>
+    <div id="chartbox"><div class="empty">Aún no llegan lecturas.<br>Enchufa el sensor y espera unos segundos.</div></div>
   </div>
+
+  <footer id="foot"></footer>
 </div>
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// ====================== CONFIG ======================
-const SUPABASE_URL  = "https://TUPROYECTO.supabase.co";
-const SUPABASE_ANON = "PEGA_AQUI_TU_ANON_KEY";
-// ====================================================
+// ====================== CONFIG (pega tus llaves) ======================
+const SUPABASE_URL  = "https://yneigdknhcvwfyiwxiaa.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InluZWlnZGtuaGN2d2Z5aXd4aWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTUzNDAsImV4cCI6MjA5NzkzMTM0MH0.1MRlQLEU01TL_ZksrXQc6x_DLPPqketmXhLH40Sr5yQ";
+// =====================================================================
 
-const WINDOW_MS=6*60*60*1000, STALE_MS=3*60*1000;
-// persistSession + autoRefreshToken hacen que la sesión sobreviva al cierre del navegador.
-const sb=createClient(SUPABASE_URL,SUPABASE_ANON,{
-  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
-});
-const $=id=>document.getElementById(id);
-let device=null, points=[], channel=null, lastTs=null;
+const WINDOW_MS = 6*60*60*1000;   // 6 h de historia
+const STALE_MS  = 3*60*1000;      // sin lectura > 3 min => "sin señal"
 
-// ---------- AUTH: UN SOLO punto de entrada ----------
-// onAuthStateChange dispara INITIAL_SESSION al cargar (con el token ya refrescado),
-// SIGNED_IN al entrar y TOKEN_REFRESHED al renovar. Evita la carrera del arranque anterior.
-sb.auth.onAuthStateChange((event,session)=>{
-  if(session) enterApp(session); else showAuth();
-});
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+const $ = id => document.getElementById(id);
 
-function showAuth(){ $("auth").classList.remove("hidden"); $("app").classList.add("hidden"); }
+let device = null;          // {id,name,min_c,max_c,...}
+let points = [];            // [{t:Date, temp, hum}]
+let channel = null;
+let lastTs = null;
 
-$("sendlink").onclick=async()=>{
-  const email=$("email").value.trim();
-  if(!email){ return setMsg("authmsg","Escribe tu email","err"); }
-  setMsg("authmsg","Enviando…","");
-  const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.href}});
-  setMsg("authmsg", error?error.message:"Listo. Revisa tu correo y abre el enlace.", error?"err":"ok");
-};
+init();
 
-async function enterApp(session){
-  $("auth").classList.add("hidden"); $("app").classList.remove("hidden");
-  $("who").textContent=session.user.email;
-  try{ sb.realtime.setAuth(session.access_token); }catch(e){}   // realtime con token fresco
-  await loadDevices();
+async function init(){
+  const { data:devs, error } = await sb.from("devices").select("*").order("name");
+  if (error){ $("connlabel").textContent = "Error al cargar equipos"; return; }
+  if (!devs || !devs.length){ $("connlabel").textContent = "No hay equipos registrados"; return; }
+
+  const sel = $("dev");
+  sel.innerHTML = devs.map(d=>`<option value="${d.id}">${d.name||d.id}</option>`).join("");
+  sel.onchange = ()=> selectDevice(devs.find(d=>d.id===sel.value));
+  selectDevice(devs[0]);
+
+  setInterval(tick, 1000);   // refresca "hace X" y detecta sin-señal
 }
-$("logout").onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
-
-// ---------- DEVICES ----------
-async function loadDevices(){
-  const {data:devs,error}=await sb.from("devices").select("*").order("name");
-  if(error){ console.error("loadDevices:",error.message); return; }
-  const sel=$("dev");
-  if(!devs||!devs.length){
-    $("claim").classList.remove("hidden"); $("dash").classList.add("hidden");
-    sel.classList.add("hidden"); return;
-  }
-  $("claim").classList.add("hidden"); $("dash").classList.remove("hidden"); sel.classList.remove("hidden");
-  sel.innerHTML=devs.map(d=>`<option value="${d.id}">${d.name||d.id}</option>`).join("");
-  sel.onchange=()=>selectDevice(devs.find(d=>d.id===sel.value));
-  selectDevice(devs.find(d=>d.id===sel.value)||devs[0]);
-}
-
-$("addbtn").onclick=()=>{ $("claim").classList.remove("hidden"); $("code").focus(); };
-$("claimbtn").onclick=async()=>{
-  const code=$("code").value.trim();
-  if(!code) return setMsg("claimmsg","Escribe el código","err");
-  setMsg("claimmsg","Vinculando…","");
-  const {data,error}=await sb.rpc("claim_device",{p_claim_code:code});
-  if(error) return setMsg("claimmsg",error.message,"err");
-  setMsg("claimmsg","¡Equipo vinculado!","ok"); $("code").value="";
-  await loadDevices();
-};
 
 async function selectDevice(d){
-  device=d; points=[]; lastTs=null;
-  $("zone").textContent=`${fmt(d.min_c)} a ${fmt(d.max_c)} °C`;
-  const since=new Date(Date.now()-WINDOW_MS).toISOString();
-  const {data}=await sb.from("readings").select("*").eq("device_id",d.id)
-    .gte("created_at",since).order("created_at",{ascending:true}).limit(2000);
-  points=(data||[]).map(r=>({t:new Date(r.created_at),temp:+r.temp_c,hum:r.humidity!=null?+r.humidity:null}));
-  if(points.length) lastTs=points[points.length-1].t;
-  render(); subscribe(d.id);
-  if(!window._tick){ window._tick=setInterval(tick,1000); }
+  device = d;
+  $("zone").textContent = `${fmt(d.min_c)} a ${fmt(d.max_c)} °C`;
+  points = []; lastTs = null;
+
+  const since = new Date(Date.now()-WINDOW_MS).toISOString();
+  const { data } = await sb.from("readings").select("*")
+    .eq("device_id", d.id).gte("created_at", since)
+    .order("created_at",{ascending:true}).limit(2000);
+  points = (data||[]).map(r=>({t:new Date(r.created_at), temp:+r.temp_c, hum:r.humidity!=null?+r.humidity:null}));
+  if (points.length) lastTs = points[points.length-1].t;
+
+  render();
+  subscribe(d.id);
 }
 
 function subscribe(id){
-  if(channel) sb.removeChannel(channel);
-  channel=sb.channel("rt-"+id)
-    .on("postgres_changes",{event:"INSERT",schema:"public",table:"readings",filter:`device_id=eq.${id}`},
-      ({new:row})=>{ points.push({t:new Date(row.created_at),temp:+row.temp_c,hum:row.humidity!=null?+row.humidity:null});
-        points=points.filter(p=>p.t.getTime()>=Date.now()-WINDOW_MS); lastTs=new Date(row.created_at); render(); })
-    .subscribe(st=>{ const live=st==="SUBSCRIBED"; $("conn").classList.toggle("live",live); });
+  if (channel) sb.removeChannel(channel);
+  channel = sb.channel("rt-"+id)
+    .on("postgres_changes",
+      { event:"INSERT", schema:"public", table:"readings", filter:`device_id=eq.${id}` },
+      ({_new, new:row})=>{
+        const r = row||_new;
+        points.push({t:new Date(r.created_at), temp:+r.temp_c, hum:r.humidity!=null?+r.humidity:null});
+        const cut = Date.now()-WINDOW_MS;
+        points = points.filter(p=>p.t.getTime()>=cut);
+        lastTs = new Date(r.created_at);
+        render();
+      })
+    .subscribe(st=>{
+      const live = st==="SUBSCRIBED";
+      $("conn").classList.toggle("live", live);
+      $("connlabel").textContent = live ? "En vivo" : "Reconectando…";
+    });
 }
 
 function currentState(){
-  if(!lastTs||!points.length) return "stale";
-  if(Date.now()-lastTs.getTime()>STALE_MS) return "stale";
-  const t=points[points.length-1].temp;
-  if(device&&(t<device.min_c||t>device.max_c)) return "alert";
+  if (!lastTs || !points.length) return "stale";
+  if (Date.now()-lastTs.getTime() > STALE_MS) return "stale";
+  const t = points[points.length-1].temp;
+  if (device && (t < device.min_c || t > device.max_c)) return "alert";
   return "safe";
 }
+
 function render(){
-  const hero=$("hero"); hero.classList.remove("state-safe","state-alert","state-stale");
+  const hero=$("hero");
+  hero.classList.remove("state-safe","state-alert","state-stale");
   const st=currentState();
-  if(!points.length){ $("temp").textContent="--";$("hum").textContent="--";$("ago").textContent="--";
-    $("status").textContent="Esperando datos"; hero.classList.add("state-stale"); return; }
+
+  if (!points.length){
+    $("temp").textContent="--"; $("hum").textContent="--"; $("ago").textContent="--";
+    $("status").textContent="Esperando datos"; hero.classList.add("state-stale");
+    return;
+  }
   const last=points[points.length-1];
-  $("temp").textContent=fmt(last.temp); $("hum").textContent=last.hum!=null?fmt(last.hum)+"%":"--";
-  if(st==="safe"){hero.classList.add("state-safe");$("status").textContent="En rango";}
-  else if(st==="alert"){hero.classList.add("state-alert");
-    $("status").textContent=`Temperatura ${last.temp>device.max_c?"alta":"baja"} — fuera de rango`;}
-  else{hero.classList.add("state-stale");$("status").textContent="Sin señal";}
+  $("temp").textContent=fmt(last.temp);
+  $("hum").textContent=last.hum!=null?fmt(last.hum)+"%":"--";
+
+  if (st==="safe"){ hero.classList.add("state-safe"); $("status").textContent="En rango"; }
+  else if (st==="alert"){
+    hero.classList.add("state-alert");
+    const dir = last.temp>device.max_c ? "alta" : "baja";
+    $("status").textContent=`Temperatura ${dir} — fuera de rango`;
+  } else {
+    hero.classList.add("state-stale"); $("status").textContent="Sin señal";
+  }
   drawChart();
 }
+
 function tick(){
-  if(!lastTs){$("ago").textContent="--";return;}
+  if (!lastTs){ $("ago").textContent="--"; return; }
   const s=Math.round((Date.now()-lastTs.getTime())/1000);
-  $("ago").textContent=s<60?`hace ${s}s`:s<3600?`hace ${Math.round(s/60)} min`:`hace ${Math.round(s/3600)} h`;
-  if(!$("hero").classList.contains("state-"+currentState())) render();
-  $("foot").textContent=device?`${device.name||device.id} · ${points.length} lecturas en 6 h`:"";
+  $("ago").textContent = s<60?`hace ${s}s` : s<3600?`hace ${Math.round(s/60)} min` : `hace ${Math.round(s/3600)} h`;
+  const want=currentState();
+  if (!$("hero").classList.contains("state-"+want)) render();   // pasar a "sin señal" solo
+  $("foot").textContent = device ? `${device.name||device.id} · ${points.length} lecturas en 6 h` : "";
 }
+
 function drawChart(){
   const box=$("chartbox");
-  if(points.length<2){box.innerHTML='<div class="empty">Reuniendo lecturas…</div>';return;}
+  if (points.length<2){ box.innerHTML='<div class="empty">Reuniendo lecturas para el gráfico…</div>'; return; }
   const W=520,H=190,padL=34,padR=10,padT=12,padB=20;
-  const t0=points[0].t.getTime(),t1=Math.max(points[points.length-1].t.getTime(),t0+1);
+  const t0=points[0].t.getTime(), t1=Math.max(points[points.length-1].t.getTime(), t0+1);
   const temps=points.map(p=>p.temp);
-  let lo=Math.min(device.min_c,...temps),hi=Math.max(device.max_c,...temps);
-  const pad=Math.max(1,(hi-lo)*0.18);lo-=pad;hi+=pad;
-  const x=t=>padL+((t-t0)/(t1-t0))*(W-padL-padR), y=v=>padT+(1-(v-lo)/(hi-lo))*(H-padT-padB);
-  const by1=y(device.max_c),by2=y(device.min_c);
+  let lo=Math.min(device.min_c,...temps), hi=Math.max(device.max_c,...temps);
+  const pad=Math.max(1,(hi-lo)*0.18); lo-=pad; hi+=pad;
+  const x=t=>padL+((t-t0)/(t1-t0))*(W-padL-padR);
+  const y=v=>padT+(1-(v-lo)/(hi-lo))*(H-padT-padB);
+
+  const bandY1=y(device.max_c), bandY2=y(device.min_c);
   const path=points.map((p,i)=>(i?"L":"M")+x(p.t.getTime()).toFixed(1)+" "+y(p.temp).toFixed(1)).join(" ");
-  const col=currentState()==="alert"?"var(--alert)":"var(--cold)";
-  const xt=[0,.5,1].map(f=>{const t=t0+(t1-t0)*f;return{x:x(t),lbl:hhmm(new Date(t))};});
-  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}">
-    <rect x="${padL}" y="${by1.toFixed(1)}" width="${W-padL-padR}" height="${(by2-by1).toFixed(1)}"
-      fill="rgba(52,211,153,.10)" stroke="rgba(52,211,153,.35)" stroke-dasharray="3 3"/>
+  const lastState=currentState();
+  const lineCol = lastState==="alert" ? "var(--alert)" : "var(--cold)";
+
+  const xticks=[0,.5,1].map(f=>{const t=t0+(t1-t0)*f;return {x:x(t),lbl:hhmm(new Date(t))};});
+
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Temperatura últimas horas">
+    <rect x="${padL}" y="${bandY1.toFixed(1)}" width="${W-padL-padR}" height="${(bandY2-bandY1).toFixed(1)}"
+          fill="rgba(52,211,153,.10)" stroke="rgba(52,211,153,.35)" stroke-dasharray="3 3"/>
     <text class="axis" x="4" y="${(y(hi)+9).toFixed(1)}">${fmt(hi)}</text>
     <text class="axis" x="4" y="${y(lo).toFixed(1)}">${fmt(lo)}</text>
-    <path d="${path}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linejoin="round"/>
-    <circle cx="${x(points[points.length-1].t.getTime()).toFixed(1)}" cy="${y(points[points.length-1].temp).toFixed(1)}" r="3.5" fill="${col}"/>
-    ${xt.map(t=>`<text class="axis" x="${t.x.toFixed(1)}" y="${H-6}" text-anchor="middle">${t.lbl}</text>`).join("")}
+    <text class="axis" x="${padL+2}" y="${(bandY1-3).toFixed(1)}" fill="rgba(52,211,153,.8)">${fmt(device.max_c)}</text>
+    <path d="${path}" fill="none" stroke="${lineCol}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(points[points.length-1].t.getTime()).toFixed(1)}" cy="${y(points[points.length-1].temp).toFixed(1)}" r="3.5" fill="${lineCol}"/>
+    ${xticks.map(t=>`<text class="axis" x="${t.x.toFixed(1)}" y="${H-6}" text-anchor="middle">${t.lbl}</text>`).join("")}
   </svg>`;
-  $("range").textContent=`${hhmm(points[0].t)} – ${hhmm(points[points.length-1].t)}`;
+  $("range").textContent = `${hhmm(points[0].t)} – ${hhmm(points[points.length-1].t)}`;
 }
-const setMsg=(id,t,c)=>{const e=$(id);e.textContent=t;e.className="msg "+(c||"");};
+
 const fmt=v=>v==null||isNaN(v)?"--":(Math.round(v*10)/10).toString();
 const hhmm=d=>d.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"});
 </script>
